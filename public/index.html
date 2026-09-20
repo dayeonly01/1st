@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1등급 연습기</title>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--ink:#172033;--muted:#667085;--line:#d9dee8;--accent:#315efb}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;background:var(--bg);color:var(--ink)}
+header{position:sticky;top:0;z-index:20;background:#ffffffee;backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 18px}
+header b{font-size:19px}.wrap{max-width:1160px;margin:auto;padding:16px}.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,.92fr);gap:16px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}.card h2{margin:0 0 7px;font-size:18px}
+p{color:var(--muted);line-height:1.5}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,.btn,input{font:inherit}button,.btn{border:1px solid var(--line);background:#fff;border-radius:11px;padding:10px 13px;cursor:pointer;min-height:42px}
+.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}.active{outline:2px solid var(--accent)}
+input[type=text],input[type=number]{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px}
+label{font-size:13px;color:var(--muted);display:block}.fields{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
+.drop{border:2px dashed #aeb7c7;border-radius:14px;padding:16px;text-align:center;background:#fafbfc;transition:.15s}
+.drop.drag{border-color:var(--accent);background:#eef3ff}.drop strong{display:block;margin-bottom:5px}
+canvas{max-width:100%;background:white;border:1px solid var(--line);border-radius:10px;touch-action:none;display:block}
+.hint{font-size:12px;color:var(--muted)}.status{font-size:13px;color:#334155;margin-top:8px}
+.a4wrap{overflow:auto;padding:8px;background:#eceff3;border-radius:12px}.a4{width:595px;height:842px;background:#fff;position:relative;margin:auto;box-shadow:0 2px 10px #0001;overflow:hidden}
+.sheetTitle{position:absolute;left:28px;right:28px;top:20px;border-bottom:1px solid #bbb;padding-bottom:8px;font-weight:800}
+.problem{position:absolute;left:30px;top:70px;width:535px;height:220px;border:1px dashed #aaa;background:#fff;padding:8px;overflow:hidden;touch-action:none}
+.problem img{width:100%;height:calc(100% - 24px);object-fit:contain;pointer-events:none}.meta{font-size:11px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.handle{position:absolute;right:2px;bottom:2px;width:18px;height:18px;border-radius:50%;background:var(--accent);border:3px solid white}
+.cropHelp{padding:8px 10px;background:#f0f4ff;border-radius:10px;font-size:12px;margin-top:8px}
+
+.textMemo{position:absolute;left:70px;top:90px;width:170px;min-width:70px;max-width:500px;min-height:34px;padding:6px 8px;border:1px dashed transparent;background:transparent;cursor:move;touch-action:none;z-index:5}
+.textMemo.selected{border-color:var(--accent);background:#f8faff}
+.textMemo .textContent{width:100%;min-height:22px;white-space:pre-wrap;word-break:break-word;outline:none;cursor:text;line-height:1.35}
+.textMemo .textHandle{display:none;position:absolute;right:-8px;bottom:-8px;width:16px;height:16px;border-radius:50%;background:var(--accent);border:2px solid #fff;box-shadow:0 1px 4px #0002;cursor:nwse-resize}
+.textMemo.selected .textHandle{display:block}
+.textTools{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+
+
+.solveBox{
+  position:absolute;
+  left:70px;
+  top:360px;
+  width:430px;
+  min-width:160px;
+  min-height:90px;
+  padding:14px 12px 10px;
+  border:1px dashed #98a2b3;
+  border-radius:8px;
+  background:#fff;
+  cursor:move;
+  touch-action:none;
+  z-index:4;
+}
+.solveBox.selected{
+  border-color:var(--accent);
+  box-shadow:0 0 0 2px rgba(49,94,251,.08);
+}
+.solveTitle{
+  position:absolute;
+  left:10px;
+  top:-11px;
+  padding:0 6px;
+  background:#fff;
+  font-size:11px;
+  color:#667085;
+  font-weight:700;
+}
+.solveLines{
+  width:100%;
+  height:100%;
+  min-height:64px;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 26px,
+      #b7c0cc 27px,
+      transparent 28px
+    );
+  pointer-events:none;
+}
+.solveHandle{
+  display:none;
+  position:absolute;
+  right:-8px;
+  bottom:-8px;
+  width:16px;
+  height:16px;
+  border-radius:50%;
+  background:var(--accent);
+  border:2px solid #fff;
+  box-shadow:0 1px 4px #0002;
+  cursor:nwse-resize;
+}
+.solveBox.selected .solveHandle{display:block}
+@media print{
+  .solveBox{border-color:#98a2b3!important;box-shadow:none!important}
+  .solveHandle{display:none!important}
+  .solveControls{display:none!important}
+}
+
+.solveControls{
+  display:none;
+  position:absolute;
+  right:8px;
+  top:-14px;
+  gap:4px;
+  align-items:center;
+  background:#fff;
+  border:1px solid #d0d5dd;
+  border-radius:999px;
+  padding:3px 6px;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+  font-size:11px;
+  color:#475467;
+  z-index:6;
+}
+.solveBox.selected .solveControls{display:flex}
+.solveControls button{
+  min-height:auto;
+  padding:2px 7px;
+  border-radius:999px;
+  font-size:12px;
+}
+.solveControls .lineCount{
+  min-width:34px;
+  text-align:center;
+  font-weight:700;
+}
+.solveLines{
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  gap:0;
+  pointer-events:none;
+}
+.solveLine{
+  flex:1 1 auto;
+  border-bottom:1px dashed #b7c0cc;
+  min-height:16px;
+}
+
+
+@media print{.textMemo{border:0!important;background:transparent!important}.textMemo .textHandle{display:none!important}}
+
+@media(max-width:900px){.grid{grid-template-columns:1fr}.fields{grid-template-columns:1fr 1fr}.fields label:first-child{grid-column:1/-1}.wrap{padding:10px}}
+@media print{.skipAnswer{display:none!important}.skipAnswer.answerPage{page-break-before:auto!important;break-before:auto!important}header,.noPrint,#editorCard,#infoCard{display:none!important}body,.wrap{background:#fff;margin:0;padding:0}.grid{display:block}.a4wrap{padding:0;background:#fff}.a4{box-shadow:none;margin:0;width:210mm;height:297mm}.answerPage{display:block!important;page-break-before:always;break-before:page}.card{border:0;padding:0}}
+</style><script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script></head>
+<body>
+<header><b>🏆 1등급 연습기</b> <span style="font-size:12px;color:#667085">오답을 깨끗한 재풀이 문제로</span></header>
+<div class="wrap">
+<div class="grid mainGrid">
+<section class="card" id="editorCard">
+<h2>1. 문제집 사진 · 크롭</h2>
+<div class="row noPrint" style="margin-bottom:10px">
+<label class="btn">📷 사진 선택<input id="file" type="file" accept="image/*" capture="environment" hidden></label>
+<span class="hint">또는 아래의 ‘문제집 사진을 넣어주세요’ 영역에 사진을 바로 드래그하세요.</span>
+</div>
+<div class="row noPrint" style="margin-top:12px">
+<button id="scan" class="primary">🧾 스캔</button><button id="removeWriting">✨ 필기 지우기</button>
+
+
+<button id="keepCrop">✓ 크롭만 남기기</button>
+<button id="deleteCrop">🗑 선택 부분 삭제</button>
+<button id="erase">🧽 지우개 OFF</button>
+<button id="undo">↶ 되돌리기</button>
+<button id="reset">원본</button>
+</div>
+<div class="cropHelp">사진 위에서 원하는 문제를 <b>드래그한 뒤 마우스를 떼면 크롭 영역이 확정</b>됩니다. 확정된 파란 점선 상자는 더 이상 움직이지 않습니다. 그 상자를 다시 잡아 오른쪽 A4로 드래그하면 <b>확정된 영역의 복사본</b>만 이동합니다.</div>
+<div style="margin-top:10px"><canvas id="cv" width="900" height="560"></canvas></div>
+<div class="row noPrint" style="margin-top:8px"><label>지우개 크기 <input id="brush" type="range" min="10" max="140" value="48"></label></div>
+<div id="cropTray" style="display:none"></div>
+<div id="status" class="status">사진을 드래그하거나 선택해 시작하세요.</div>
+<div class="hint">※ <b>스캔</b>은 종이 배경·명암을 정리합니다. <b>필기 지우기</b>는 색이 있는 채점/필기와 가는 연필 흔적을 보수적으로 제거하는 MVP 기능입니다. 인쇄 숫자·수식과 겹친 필기는 자동으로 억지 복원하지 않고 원본을 보존하는 방향입니다.</div>
+</section>
+<section class="card" id="a4Card">
+<div class="row noPrint" style="justify-content:space-between">
+<div><h2 style="margin:0">2. A4 오답 문제지</h2><div class="hint">문제를 배치하고, 필요할 때만 ＋텍스트 넣기 또는 ＋풀이 줄 넣기를 사용하세요. 텍스트와 풀이 칸은 오른쪽 아래 파란 점을 드래그해 크기를 조절할 수 있고, 풀이 칸을 클릭하면 줄 수 조절 버튼이 나타납니다.</div></div>
+<div class="textTools">
+<button id="addText">＋ 텍스트 넣기</button>
+<button id="addSolve">＋ 풀이 줄 넣기</button>
+<button id="deleteText" title="선택한 텍스트 삭제">텍스트 삭제</button>
+<button id="deleteSolve" title="선택한 풀이 칸 삭제">풀이 칸 삭제</button>
+</div>
+<label style="font-size:12px"><input id="includeAnswers" type="checkbox" checked> 마지막 정답표 포함</label>
+<button class="primary" id="pdf">📄 PDF로 저장 / 인쇄</button>
+</div>
+<div class="a4wrap" style="margin-top:12px">
+<div class="a4" id="a4"><div class="sheetTitle">1등급 연습기 · 다시 풀기</div></div>
+<div class="a4 answerPage" id="answerPage" style="margin-top:18px;display:none">
+  <div class="sheetTitle" id="answerTitle">1등급 연습기 · 정답 / 문제 정보</div>
+  <div id="answerList" style="position:absolute;left:38px;right:38px;top:72px;font-size:14px;line-height:1.8"></div>
+</div>
+</div>
+</section>
+</div>
+<section class="card" id="infoCard" style="margin-top:16px">
+<h2>3. 문제 정보</h2>
+<div class="fields">
+<label>문제집<input id="book" type="text" placeholder="예: 사고력 수학"></label>
+<label>페이지 <span id="pageAuto" style="color:#315efb"></span><input id="page" type="number" placeholder="자동 인식"></label>
+<label>문제번호<input id="num" type="text" placeholder="2번"></label>
+</div>
+<div class="row" style="margin-top:12px">
+<label style="flex:1;min-width:220px">정답<input id="answerText" type="text" placeholder="예: 5730 / ④ / 12cm"></label>
+</div>
+<label style="margin-top:10px">오답 메모<input id="memo" type="text" placeholder="예: 조건 하나를 놓침"></label>
+<div class="hint" style="margin-top:7px">📖 스캔하면 사진 맨 아래쪽의 독립된 숫자를 페이지 번호 후보로 자동 인식합니다. 페이지 + 문제번호 + 정답은 이 브라우저에 연결 저장되어, 같은 페이지와 문제번호를 다시 입력하면 저장했던 정답을 자동으로 불러옵니다.</div>
+<div class="row noPrint" style="margin-top:14px">
+<button class="primary" id="add">＋ 이 문제를 A4에 넣기</button><button id="auto">▦ 자동 배치</button><button id="clearSheet">A4 비우기</button>
+<button id="showLibrary">📚 오답 보관함</button>
+</div>
+</section>
+<section class="card noPrint" id="libraryCard" style="margin-top:16px;display:none">
+<h2>📚 오답 보관함</h2>
+<p class="hint">A4에 넣은 문제를 브라우저에 저장합니다. 다시 풀 문제를 골라 재사용할 수 있습니다.</p>
+<div id="libraryList"></div>
+</section>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),cv=$('#cv'),ctx=cv.getContext('2d',{willReadFrequently:true}),a4=$('#a4');
+let original=null,history=[],mode='',drawing=false,start=null,last=null,cropRect=null,items=[],textItems=[],selectedText=null,solveItems=[],selectedSolve=null;
+function msg(t){$('#status').textContent=t}
+function blank(){ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);ctx.fillStyle='#667085';ctx.font='26px system-ui';ctx.textAlign='center';ctx.fillText('문제집 사진을 넣어주세요',cv.width/2,cv.height/2)} blank();
+function snap(){history.push({data:ctx.getImageData(0,0,cv.width,cv.height),w:cv.width,h:cv.height});if(history.length>15)history.shift()}
+function loadFile(f){if(!f||!f.type.startsWith('image/')){msg('이미지 파일만 넣을 수 있습니다.');return}const im=new Image();im.onload=()=>{const max=1600,s=Math.min(1,max/im.width);cv.width=Math.round(im.width*s);cv.height=Math.round(im.height*s);ctx.drawImage(im,0,0,cv.width,cv.height);original={data:ctx.getImageData(0,0,cv.width,cv.height),w:cv.width,h:cv.height};history=[];cropRect=null;cropBoxes=[];activeCrop=-1;window._baseFrame=ctx.getImageData(0,0,cv.width,cv.height);msg('사진을 불러왔습니다. 스캔 또는 크롭을 사용해보세요.')};im.src=URL.createObjectURL(f)}
+$('#file').onchange=e=>loadFile(e.target.files[0]);
+['dragenter','dragover'].forEach(n=>cv.addEventListener(n,e=>{e.preventDefault();cv.style.outline='3px solid #315efb'}));
+['dragleave','drop'].forEach(n=>cv.addEventListener(n,e=>{e.preventDefault();cv.style.outline=''}));
+cv.addEventListener('drop',e=>loadFile(e.dataTransfer.files[0]));
+function getPos(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*cv.width/r.width,y:(e.clientY-r.top)*cv.height/r.height}}
+function baseImage(){return ctx.getImageData(0,0,cv.width,cv.height)}
+$('#scan').onclick=()=>{snap();let d=baseImage(),p=d.data;for(let i=0;i<p.length;i+=4){let g=.299*p[i]+.587*p[i+1]+.114*p[i+2];let v;if(g>178)v=255;else if(g<105)v=Math.max(0,g*.62);else v=Math.min(255,(g-105)*2.65+65);p[i]=p[i+1]=p[i+2]=v}ctx.putImageData(d,0,0);window._baseFrame=ctx.getImageData(0,0,cv.width,cv.height);cropBoxes=[];activeCrop=-1;msg('스캔 보정을 적용했습니다. 종이 배경을 깨끗한 흰색으로 정리했습니다.');detectPageNumber()}
+
+$('#removeWriting').onclick=()=>{
+  if(!window._baseFrame){msg('먼저 문제집 사진을 넣어주세요.');return}
+  snap();
+  let d=ctx.getImageData(0,0,cv.width,cv.height),p=d.data,removed=0;
+  for(let i=0;i<p.length;i+=4){
+    const r=p[i],g=p[i+1],b=p[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b),sat=mx-mn,lum=(r+g+b)/3;
+    // Colored pen/grading marks are relatively safe to remove. Very light gray pencil is also whitened.
+    if((sat>34 && lum>65) || (sat<18 && lum>155 && lum<225)){
+      p[i]=p[i+1]=p[i+2]=255;removed++;
+    }
+  }
+  ctx.putImageData(d,0,0);window._baseFrame=ctx.getImageData(0,0,cv.width,cv.height);cropBoxes=[];activeCrop=-1;
+  msg('필기 지우기 1차 처리를 적용했습니다. 인쇄물과 겹친 진한 연필은 원문 훼손 방지를 위해 남을 수 있습니다.');
+}
+
+let cropBoxes=[], activeCrop=-1, dragCrop=null; mode='crop';
+function redrawWithBoxes(){
+  if(!window._baseFrame) window._baseFrame=ctx.getImageData(0,0,cv.width,cv.height);
+  ctx.putImageData(window._baseFrame,0,0);
+  ctx.save();
+  cropBoxes.forEach((r,i)=>{
+    ctx.strokeStyle='#315efb';ctx.lineWidth=Math.max(3,cv.width/350);ctx.setLineDash([12,8]);
+    ctx.strokeRect(r.x,r.y,r.w,r.h);
+    if(i===activeCrop){ctx.fillStyle='rgba(49,94,251,.08)';ctx.fillRect(r.x,r.y,r.w,r.h)}
+  });
+  ctx.restore();
+}
+function commitBase(){window._baseFrame=ctx.getImageData(0,0,cv.width,cv.height);cropBoxes=[];activeCrop=-1}
+$('#erase').onclick=e=>{mode=mode==='erase'?'crop':'erase';e.target.textContent='🧽 지우개 '+(mode==='erase'?'ON':'OFF');e.target.classList.toggle('active',mode==='erase');$('#crop').classList.remove('active')}
+cv.addEventListener('pointerdown',e=>{
+  const q=getPos(e);
+  if(mode==='crop'){
+    const hit=cropBoxes.findIndex(r=>q.x>=r.x&&q.x<=r.x+r.w&&q.y>=r.y&&q.y<=r.y+r.h);
+    if(hit>=0){
+      activeCrop=hit;
+      // Lock the crop coordinates. Dragging this selection only carries a copy to A4.
+      dragCrop={i:hit,startX:e.clientX,startY:e.clientY,carrying:true};
+      cv.setPointerCapture(e.pointerId);
+      redrawWithBoxes();return
+    }
+    activeCrop=-1;start=q;drawing=true;redrawWithBoxes();return
+  }
+  if(mode==='erase'){drawing=true;snap();last=q;cv.setPointerCapture(e.pointerId)}
+  else {activeCrop=-1;if(cropBoxes.length)redrawWithBoxes()}
+})
+cv.addEventListener('pointermove',e=>{
+  const q=getPos(e);
+  if(mode==='crop'&&dragCrop){
+    const r=cropBoxes[dragCrop.i], ar=a4.getBoundingClientRect();
+    const dist=Math.hypot(e.clientX-dragCrop.startX,e.clientY-dragCrop.startY);
+    if(dist>5){
+      let ghost=document.getElementById('cropGhost');
+      if(!ghost){
+        ghost=document.createElement('img');ghost.id='cropGhost';ghost.src=cropDataURL(r);
+        ghost.style.cssText='position:fixed;z-index:9999;pointer-events:none;width:180px;max-height:160px;object-fit:contain;background:white;border:2px dashed #315efb;border-radius:8px;box-shadow:0 8px 25px #0003;opacity:.9';
+        document.body.appendChild(ghost);
+      }
+      ghost.style.left=(e.clientX+12)+'px';ghost.style.top=(e.clientY+12)+'px';
+      a4.style.outline=(e.clientX>=ar.left&&e.clientX<=ar.right&&e.clientY>=ar.top&&e.clientY<=ar.bottom)?'4px solid #315efb':'';
+    }
+    // Important: the original crop rectangle is never moved here.
+    return
+  }
+  if(mode==='crop'&&drawing){
+    const x=Math.min(start.x,q.x),y=Math.min(start.y,q.y),w=Math.abs(q.x-start.x),h=Math.abs(q.y-start.y);
+    redrawWithBoxes();ctx.save();ctx.strokeStyle='#315efb';ctx.lineWidth=Math.max(3,cv.width/350);ctx.setLineDash([12,8]);ctx.strokeRect(x,y,w,h);ctx.restore();cropRect={x,y,w,h};return
+  }
+  if(mode==='erase'&&drawing){
+    const size=+$('#brush').value*(cv.width/cv.getBoundingClientRect().width);ctx.strokeStyle='#fff';ctx.lineWidth=size;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(q.x,q.y);ctx.stroke();last=q
+  }
+})
+cv.addEventListener('pointerup',(event)=>{
+  if(mode==='crop'&&drawing&&cropRect&&cropRect.w>8&&cropRect.h>8){
+    cropBoxes=[{...cropRect}];activeCrop=0;drawing=false;cropRect=null;redrawWithBoxes();
+    msg('새 크롭 영역을 선택했습니다. 이전 크롭은 자동 해제되었습니다. 파란 상자를 오른쪽 A4로 끌어놓으세요.');
+  } else drawing=false;
+  if(dragCrop){
+    const ar=a4.getBoundingClientRect();
+    if(dragCrop.carrying && event.clientX>=ar.left&&event.clientX<=ar.right&&event.clientY>=ar.top&&event.clientY<=ar.bottom){
+      const i=dragCrop.i,before=items.length;addImageToA4(cropDataURL(cropBoxes[i]));
+      const el=items[before],sx=595/ar.width,sy=842/ar.height;
+      el.style.left=Math.max(0,Math.min(595-el.offsetWidth,(event.clientX-ar.left)*sx-el.offsetWidth/2))+'px';
+      el.style.top=Math.max(50,Math.min(842-el.offsetHeight,(event.clientY-ar.top)*sy-el.offsetHeight/2))+'px';
+      msg('크롭한 문제를 A4에 바로 넣었습니다.');
+    }
+    const ghost=document.getElementById('cropGhost');if(ghost)ghost.remove();
+    a4.style.outline='';
+  }
+  dragCrop=null;
+})
+$('#keepCrop').onclick=()=>{
+  if(activeCrop<0){msg('남길 크롭 상자를 먼저 클릭해주세요.');return}
+  const r=cropBoxes[activeCrop];redrawWithBoxes();
+  // restore clean base before extracting
+  ctx.putImageData(window._baseFrame,0,0);
+  snap();const d=ctx.getImageData(r.x,r.y,r.w,r.h);cv.width=Math.round(r.w);cv.height=Math.round(r.h);ctx.putImageData(d,0,0);window._baseFrame=ctx.getImageData(0,0,cv.width,cv.height);cropBoxes=[];activeCrop=-1;mode='crop';msg('선택한 문제만 남겼습니다. 다시 사진 위를 드래그하면 새 크롭이 만들어집니다.')
+}
+$('#deleteCrop').onclick=()=>{
+  if(activeCrop<0){msg('삭제할 크롭 상자를 먼저 클릭해주세요.');return}
+  ctx.putImageData(window._baseFrame,0,0);snap();const r=cropBoxes[activeCrop];ctx.fillStyle='#fff';ctx.fillRect(r.x,r.y,r.w,r.h);window._baseFrame=ctx.getImageData(0,0,cv.width,cv.height);cropBoxes.splice(activeCrop,1);activeCrop=-1;redrawWithBoxes();msg('선택 영역을 삭제했습니다.')
+}
+$('#undo').onclick=()=>{const h=history.pop();if(!h)return;cv.width=h.w;cv.height=h.h;ctx.putImageData(h.data,0,0);cropRect=null;msg('마지막 작업을 되돌렸습니다.')}
+$('#reset').onclick=()=>{if(!original)return;snap();cv.width=original.w;cv.height=original.h;ctx.putImageData(original.data,0,0);cropRect=null;cropBoxes=[];activeCrop=-1;window._baseFrame=ctx.getImageData(0,0,cv.width,cv.height);msg('원본으로 돌아왔습니다.')}
+
+function cropDataURL(r){
+  const temp=document.createElement('canvas');temp.width=Math.max(1,Math.round(r.w));temp.height=Math.max(1,Math.round(r.h));
+  const tc=temp.getContext('2d');const base=document.createElement('canvas');base.width=cv.width;base.height=cv.height;base.getContext('2d').putImageData(window._baseFrame,0,0);
+  tc.drawImage(base,r.x,r.y,r.w,r.h,0,0,temp.width,temp.height);return temp.toDataURL('image/png')
+}
+function refreshTray(){
+  const tray=$('#cropTray');tray.innerHTML='';
+  cropBoxes.forEach((r,i)=>{
+    const chip=document.createElement('div');chip.draggable=true;chip.style.cssText='border:2px dashed #315efb;border-radius:10px;padding:5px;background:#fff;cursor:grab;width:110px';
+    chip.innerHTML=`<img src="${cropDataURL(r)}" style="width:100%;height:70px;object-fit:contain;display:block"><div style="font-size:11px;text-align:center">문제 ${i+1} · A4로 드래그</div>`;
+    chip.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',String(i));e.dataTransfer.effectAllowed='copy'});
+    chip.addEventListener('click',()=>{activeCrop=i;redrawWithBoxes()});tray.appendChild(chip)
+  })
+}
+const oldRedraw=redrawWithBoxes;redrawWithBoxes=function(){oldRedraw();refreshTray()}
+
+
+
+
+function renderSolveLines(el, count){
+  count=Math.max(2, Math.min(12, Number(count)||4));
+  el.dataset.lines=count;
+  const host=el.querySelector('.solveLines');
+  host.innerHTML='';
+  for(let i=0;i<count;i++){
+    const line=document.createElement('div');
+    line.className='solveLine';
+    host.appendChild(line);
+  }
+  const badge=el.querySelector('.lineCount');
+  if(badge) badge.textContent=count+'줄';
+}
+function changeSolveLines(delta){
+  if(!selectedSolve) return;
+  const current=Number(selectedSolve.dataset.lines||4);
+  renderSolveLines(selectedSolve, current+delta);
+}
+function selectSolveBox(el){
+  solveItems.forEach(x=>x.classList.remove('selected'));
+  selectedSolve=el||null;
+  if(selectedSolve){
+    selectedSolve.classList.add('selected');
+    if(selectedText) selectTextMemo(null);
+  }
+}
+function addSolveBox(){
+  const el=document.createElement('div');
+  el.className='solveBox';
+  el.style.left='70px';
+  el.style.top=(350+Math.min(solveItems.length*110,330))+'px';
+  el.style.width='430px';
+  el.style.height='130px';
+  el.innerHTML=`
+    <div class="solveTitle">풀이 과정</div>
+    <div class="solveControls">
+      <button type="button" class="minusLine">－</button>
+      <span class="lineCount">4줄</span>
+      <button type="button" class="plusLine">＋</button>
+    </div>
+    <div class="solveLines"></div>
+    <span class="solveHandle" title="드래그해서 풀이 칸 크기 조절"></span>
+  `;
+  a4.appendChild(el);
+  solveItems.push(el);
+  renderSolveLines(el, 4);
+  selectSolveBox(el);
+
+  el.querySelector('.minusLine').addEventListener('click', e=>{
+    e.stopPropagation();
+    renderSolveLines(el, Number(el.dataset.lines||4)-1);
+  });
+  el.querySelector('.plusLine').addEventListener('click', e=>{
+    e.stopPropagation();
+    renderSolveLines(el, Number(el.dataset.lines||4)+1);
+  });
+
+  let action='',sx=0,sy=0,sl=0,st=0,startW=430,startH=130;
+
+  el.addEventListener('pointerdown',e=>{
+    selectSolveBox(el);
+    if(e.target.closest('.solveControls')) return;
+    action=e.target.classList.contains('solveHandle')?'resize':'move';
+    sx=e.clientX; sy=e.clientY;
+    sl=el.offsetLeft; st=el.offsetTop;
+    startW=el.offsetWidth; startH=el.offsetHeight;
+    el.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+
+  el.addEventListener('pointermove',e=>{
+    if(!action)return;
+    const dx=e.clientX-sx,dy=e.clientY-sy;
+
+    if(action==='move'){
+      const maxLeft=Math.max(0,a4.clientWidth-el.offsetWidth);
+      const maxTop=Math.max(50,a4.clientHeight-el.offsetHeight);
+      el.style.left=Math.max(0,Math.min(maxLeft,sl+dx))+'px';
+      el.style.top=Math.max(50,Math.min(maxTop,st+dy))+'px';
+      return;
+    }
+
+    if(action==='resize'){
+      const nw=Math.max(160,Math.min(a4.clientWidth-sl,startW+dx));
+      const nh=Math.max(90,Math.min(a4.clientHeight-st,startH+dy));
+      el.style.width=nw+'px';
+      el.style.height=nh+'px';
+    }
+  });
+
+  const stop=()=>action='';
+  el.addEventListener('pointerup',stop);
+  el.addEventListener('pointercancel',stop);
+
+  return el;
+}
+
+$('#addSolve').onclick=()=>addSolveBox();
+$('#deleteSolve').onclick=()=>{
+  if(!selectedSolve)return;
+  const el=selectedSolve;
+  solveItems=solveItems.filter(x=>x!==el);
+  selectedSolve=null;
+  el.remove();
+};
+
+function selectTextMemo(el){
+  textItems.forEach(x=>x.classList.remove('selected'));
+  selectedText=el||null;
+  if(selectedText && selectedSolve) selectSolveBox(null);
+  if(selectedText){
+    selectedText.classList.add('selected');
+  }
+}
+function addTextMemo(initial='메모를 입력하세요'){
+  const el=document.createElement('div');
+  el.className='textMemo';
+  el.style.left='75px';
+  el.style.top=(90+Math.min(textItems.length*48,520))+'px';
+  el.style.width='170px';
+  el.innerHTML=`<div class="textContent" contenteditable="true" spellcheck="false"></div><span class="textHandle" title="드래그해서 상자와 글자 크기 조절"></span>`;
+  const content=el.querySelector('.textContent');
+  content.textContent=initial;
+  content.style.fontSize='16px';
+  a4.appendChild(el);
+  textItems.push(el);
+  selectTextMemo(el);
+
+  let action='',sx=0,sy=0,sl=0,st=0,startW=170,startFont=16;
+
+  el.addEventListener('pointerdown',e=>{
+    selectTextMemo(el);
+
+    if(e.target===content){
+      return;
+    }
+
+    action=e.target.classList.contains('textHandle')?'resize':'move';
+    sx=e.clientX; sy=e.clientY;
+    sl=el.offsetLeft; st=el.offsetTop;
+    startW=el.offsetWidth;
+    startFont=parseFloat(getComputedStyle(content).fontSize)||16;
+
+    el.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+
+  el.addEventListener('pointermove',e=>{
+    if(!action)return;
+
+    const dx=e.clientX-sx, dy=e.clientY-sy;
+
+    if(action==='move'){
+      const maxLeft=Math.max(0,a4.clientWidth-el.offsetWidth);
+      const maxTop=Math.max(50,a4.clientHeight-el.offsetHeight);
+      el.style.left=Math.max(0,Math.min(maxLeft,sl+dx))+'px';
+      el.style.top=Math.max(50,Math.min(maxTop,st+dy))+'px';
+      return;
+    }
+
+    if(action==='resize'){
+      const delta=(dx+dy*0.55);
+      const newW=Math.max(70,Math.min(500,startW+delta));
+      const ratio=newW/startW;
+      const newFont=Math.max(8,Math.min(72,startFont*ratio));
+
+      el.style.width=newW+'px';
+      content.style.fontSize=newFont+'px';
+    }
+  });
+
+  const stop=()=>{action=''};
+  el.addEventListener('pointerup',stop);
+  el.addEventListener('pointercancel',stop);
+
+  content.addEventListener('focus',()=>selectTextMemo(el));
+  content.addEventListener('input',()=>{ el.style.height='auto'; });
+
+  setTimeout(()=>{
+    content.focus();
+    const r=document.createRange();
+    r.selectNodeContents(content);
+    const sel=window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(r);
+  },0);
+
+  return el;
+}
+$('#addText').onclick=()=>addTextMemo();
+$('#deleteText').onclick=()=>{
+  if(!selectedText)return;
+  const el=selectedText;
+  textItems=textItems.filter(x=>x!==el);
+  selectedText=null;
+  el.remove();
+};
+a4.addEventListener('pointerdown',e=>{
+  if(e.target===a4){selectTextMemo(null);selectSolveBox(null)}
+});
+
+function addImageToA4(src,store=true){saveLinkedAnswer();
+  const problemInfo={
+    book:($('#book').value||'').trim(),
+    page:($('#page').value||'').trim(),
+    num:($('#num').value||'').trim(),
+    answer:($('#answerText').value||'').trim()
+  };
+  const el=document.createElement('div');el.className='problem';el.style.top=Math.min(70+items.length*235,620)+'px';
+  el.innerHTML=`<div style="font-weight:800;font-size:13px">${items.length+1}.</div><img src="${src}" style="height:calc(100% - 40px)"><div class="meta"></div><span class="handle"></span>`;el.querySelector('.meta').textContent=metadata();el._problemInfo=problemInfo;a4.appendChild(el);wire(el);items.push(el);if(store)saveLibrary(problemInfo,src);renderAnswerPage()
+}
+a4.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='copy'});
+a4.addEventListener('drop',e=>{e.preventDefault();const i=Number(e.dataTransfer.getData('text/plain'));if(!Number.isInteger(i)||!cropBoxes[i])return;const before=items.length;addImageToA4(cropDataURL(cropBoxes[i]));const el=items[before],r=a4.getBoundingClientRect(),sx=595/r.width,sy=842/r.height;el.style.left=Math.max(0,Math.min(595-el.offsetWidth,(e.clientX-r.left)*sx-el.offsetWidth/2))+'px';el.style.top=Math.max(50,Math.min(842-el.offsetHeight,(e.clientY-r.top)*sy-el.offsetHeight/2))+'px';msg('크롭한 문제를 놓은 위치에 추가했습니다.')});
+
+async function detectPageNumber(){
+  if(!window._baseFrame || typeof Tesseract==='undefined'){ $('#pageAuto').textContent=''; return; }
+  $('#pageAuto').textContent='(페이지 찾는 중…)';
+  try{
+    const base=document.createElement('canvas');base.width=cv.width;base.height=cv.height;
+    base.getContext('2d').putImageData(window._baseFrame,0,0);
+    const cut=document.createElement('canvas'), y=Math.floor(cv.height*.70);
+    cut.width=cv.width;cut.height=cv.height-y;
+    const cc=cut.getContext('2d');cc.drawImage(base,0,y,cv.width,cv.height-y,0,0,cut.width,cut.height);
+    const result=await Tesseract.recognize(cut,'eng',{logger:()=>{}});
+    const lines=(result.data.lines||[]).map(l=>({text:(l.text||'').trim(),box:l.bbox}));
+    let candidates=[];
+    for(const l of lines){
+      const cleaned=l.text.replace(/\s/g,'');
+      if(/^\d{1,4}$/.test(cleaned)){
+        const cx=(l.box.x0+l.box.x1)/2, edge=Math.min(cx,cut.width-cx);
+        // Page numbers are commonly centered or isolated near a lower corner.
+        candidates.push({num:cleaned,y:l.box.y1,center:Math.abs(cx-cut.width/2),edge});
+      }
+    }
+    if(candidates.length){
+      candidates.sort((a,b)=>b.y-a.y || a.center-b.center);
+      const val=candidates[0].num;
+      $('#page').value=val;currentSourcePage=val;$('#pageAuto').textContent='(자동 '+val+'p)';loadLinkedAnswer();
+      msg('하단의 독립된 숫자 '+val+'을 페이지 번호 후보로 자동 메모했습니다. 필요하면 직접 수정하세요.');
+    }else $('#pageAuto').textContent='(자동 인식 못함)';
+  }catch(e){ $('#pageAuto').textContent='(자동 인식 실패)'; }
+}
+
+
+let currentSourcePage='';
+const LIB_KEY='onegrade-problem-library-v1';
+
+async function detectProblemNumber(r){
+  if(typeof Tesseract==='undefined'||!window._baseFrame)return;
+  try{
+    const base=document.createElement('canvas');base.width=cv.width;base.height=cv.height;
+    base.getContext('2d').putImageData(window._baseFrame,0,0);
+    const cut=document.createElement('canvas');
+    cut.width=Math.max(1,Math.round(Math.min(r.w*.28,180)));cut.height=Math.max(1,Math.round(Math.min(r.h*.35,120)));
+    cut.getContext('2d').drawImage(base,r.x,r.y,Math.min(r.w*.28,180),Math.min(r.h*.35,120),0,0,cut.width,cut.height);
+    const res=await Tesseract.recognize(cut,'eng',{logger:()=>{}});
+    const m=(res.data.text||'').match(/\b([1-9]\d?)\b/);
+    if(m){$('#num').value=m[1]+'번';loadLinkedAnswer();msg('문제번호 '+m[1]+'번을 후보로 자동 입력했습니다. 필요하면 수정하세요.')}
+  }catch(e){}
+}
+function readLibrary(){try{return JSON.parse(localStorage.getItem(LIB_KEY)||'[]')}catch(e){return []}}
+function saveLibrary(info,src){
+  const lib=readLibrary();
+  lib.push({...info,img:src,created:Date.now(),retry:0});
+  localStorage.setItem(LIB_KEY,JSON.stringify(lib.slice(-80)));
+  renderLibrary();
+}
+function renderLibrary(){
+  const list=$('#libraryList'),lib=readLibrary();
+  if(!lib.length){list.innerHTML='<div class="hint">아직 저장된 오답이 없습니다.</div>';return}
+  list.innerHTML=lib.slice().reverse().map((x,ri)=>{
+    const i=lib.length-1-ri;
+    return `<div style="display:flex;gap:10px;align-items:center;border-top:1px solid #eee;padding:9px 0">
+      <img src="${x.img}" style="width:80px;height:60px;object-fit:contain;border:1px solid #ddd">
+      <div style="flex:1;font-size:13px"><b>${esc(x.book||'문제집')}</b> · p.${esc(x.page||'?')} · ${esc(x.num||'?')} ${x.answer?'· 정답 '+esc(x.answer):''}<br><span class="hint">다시 푼 횟수 ${x.retry||0}</span></div>
+      <button onclick="reuseProblem(${i})">A4에 다시 넣기</button>
+    </div>`
+  }).join('')
+}
+window.reuseProblem=function(i){
+  const lib=readLibrary(),x=lib[i];if(!x)return;
+  $('#book').value=x.book||'';$('#page').value=x.page||'';$('#num').value=x.num||'';$('#answerText').value=x.answer||'';
+  addImageToA4(x.img,false);x.retry=(x.retry||0)+1;localStorage.setItem(LIB_KEY,JSON.stringify(lib));renderLibrary()
+}
+
+const ANSWER_KEY='onegrade-answer-map-v1';
+function readAnswerMap(){try{return JSON.parse(localStorage.getItem(ANSWER_KEY)||'{}')}catch(e){return {}}}
+function answerKey(){const p=$('#page').value.trim(),n=$('#num').value.trim();return p&&n ? `${p}::${n}` : ''}
+function saveLinkedAnswer(){
+  const k=answerKey(), ans=$('#answerText').value.trim();
+  if(!k||!ans)return;
+  const map=readAnswerMap();map[k]=ans;localStorage.setItem(ANSWER_KEY,JSON.stringify(map));
+}
+function loadLinkedAnswer(){
+  const k=answerKey();if(!k)return;
+  const ans=readAnswerMap()[k];
+  if(ans!==undefined)$('#answerText').value=ans;
+}
+$('#page').addEventListener('change',loadLinkedAnswer);
+$('#num').addEventListener('change',loadLinkedAnswer);
+$('#answerText').addEventListener('change',saveLinkedAnswer);
+function metadata(){const b=$('#book').value||'문제집',p=$('#page').value||'__',n=$('#num').value||'__',ans=$('#answerText').value,m=$('#memo').value;return `${b} · p.${p} · ${n}${ans?' · 정답 '+ans:''}${m?' · '+m:''}`}
+function wire(el){let m='',sx=0,sy=0,sl=0,st=0,sw=0,sh=0;el.onpointerdown=e=>{m=e.target.classList.contains('handle')?'resize':'move';sx=e.clientX;sy=e.clientY;sl=el.offsetLeft;st=el.offsetTop;sw=el.offsetWidth;sh=el.offsetHeight;el.setPointerCapture(e.pointerId)};el.onpointermove=e=>{if(!m)return;let dx=e.clientX-sx,dy=e.clientY-sy;if(m==='move'){el.style.left=Math.max(0,Math.min(595-el.offsetWidth,sl+dx))+'px';el.style.top=Math.max(50,Math.min(842-el.offsetHeight,st+dy))+'px'}else{el.style.width=Math.max(150,Math.min(595-el.offsetLeft,sw+dx))+'px';el.style.height=Math.max(100,Math.min(842-el.offsetTop,sh+dy))+'px'}};el.onpointerup=()=>m=''}
+$('#add').onclick=()=>{if(activeCrop>=0&&cropBoxes[activeCrop])addImageToA4(cropDataURL(cropBoxes[activeCrop]));else{if(window._baseFrame)ctx.putImageData(window._baseFrame,0,0);addImageToA4(cv.toDataURL('image/png'));if(cropBoxes.length)redrawWithBoxes()}msg('A4에 문제를 추가했습니다.')}
+$('#auto').onclick=()=>{let n=items.length;if(!n)return;let gap=10,top=60,h=Math.max(120,(842-top-20-gap*(n-1))/n);items.forEach((el,i)=>{el.style.left='25px';el.style.top=(top+i*(h+gap))+'px';el.style.width='545px';el.style.height=h+'px'})}
+$('#clearSheet').onclick=()=>{items.forEach(x=>x.remove());items=[];textItems.forEach(x=>x.remove());textItems=[];selectedText=null;solveItems.forEach(x=>x.remove());solveItems=[];selectedSolve=null;renderAnswerPage()}
+$('#showLibrary').onclick=()=>{const c=$('#libraryCard');c.style.display=c.style.display==='none'?'block':'none';renderLibrary()}
+
+function esc(v){return String(v||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function renderAnswerPage(){
+  const infos=items.map(el=>el._problemInfo||{}), page=$('#answerPage'), list=$('#answerList'), title=$('#answerTitle');
+  if(!infos.length){page.style.display='none';return}
+  const books=[...new Set(infos.map(x=>x.book).filter(Boolean))];
+  page.style.display='none';
+  title.textContent=books.length===1 ? books[0]+' · 정답 / 문제 정보' : '1등급 연습기 · 정답 / 문제 정보';
+  list.innerHTML=infos.map((x,i)=>{
+    const where=[books.length===1?'':x.book, x.page?`p.${x.page}`:'페이지 미기록', x.num?`${x.num}`:'문제번호 미기록'].filter(Boolean).join(' · ');
+    const ans=x.answer ? `<b>정답 ${esc(x.answer)}</b>` : `<span style="color:#667085">정답 미기록 — 정답지에서 이 문제를 확인</span>`;
+    return `<div style="padding:10px 0;border-bottom:1px solid #ddd"><b>${i+1}.</b> ${esc(where)} &nbsp; — &nbsp; ${ans}</div>`
+  }).join('');
+}
+
+$('#pdf').onclick=()=>{selectTextMemo(null);selectSolveBox(null);renderAnswerPage();const inc=$('#includeAnswers').checked;$('#answerPage').classList.toggle('skipAnswer',!inc);window.print();$('#answerPage').classList.remove('skipAnswer')};
+function fit(){const w=document.querySelector('.a4wrap').clientWidth-16,s=Math.min(1,w/595);a4.style.transform=`scale(${s})`;a4.style.transformOrigin='top left';a4.parentElement.style.height=(842*s+16)+'px'}addEventListener('resize',fit);fit();
+</script></body></html>

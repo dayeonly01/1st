@@ -1,6 +1,6 @@
 # 1등급 연습기 웹앱
 
-현재 v11 기능을 그대로 웹서버에서 실행하도록 포장한 첫 배포용 프로젝트입니다.
+기존 1등급 연습기에 서버 기반 AI 필기 지우기를 추가한 버전입니다.
 
 ## 내 컴퓨터에서 실행
 1. Node.js 18 이상 설치
@@ -11,10 +11,34 @@
 이 폴더를 GitHub 저장소에 올린 뒤 Vercel/Render/Railway 같은 Node.js 호스팅에 연결하면 됩니다.
 Start command는 `npm start`입니다.
 
-## 중요: AI 필기 지우기
-현재 `필기 지우기`는 v11의 브라우저 픽셀 처리입니다. 실제 AI 필기 제거는 아직 연결되지 않았습니다.
-다음 개발 단계에서 `/api/remove-handwriting` 같은 서버 API를 추가하고, 인쇄 원문을 보존하는 마스크 기반 모델/서비스를 연결해야 합니다.
-API 키는 절대로 public/index.html 안에 넣지 않고 서버 환경변수로 보관해야 합니다.
+## AI 필기 지우기 설정
+
+이 버전의 `✨ AI 필기 지우기`는 서버의 `/api/remove-handwriting`을 거쳐 OpenAI 이미지 편집 모델을 사용합니다.
+
+Render 대시보드에서 해당 Web Service를 열고 다음 환경변수를 추가하세요.
+
+- Key: `OPENAI_API_KEY`
+- Value: OpenAI에서 발급한 API 키
+
+선택 환경변수:
+
+- Key: `OPENAI_IMAGE_MODEL`
+- Value: 기본값은 `gpt-image-1`
+
+API 키는 절대로 `public/index.html`, GitHub 저장소 또는 화면에 입력하지 마세요. 환경변수를 저장한 뒤 Render에서 다시 배포하면 기능이 활성화됩니다. 이미지 편집 API 사용량에 따라 별도 비용이 발생합니다.
+
+## GitHub에 올릴 파일 구조
+
+```text
+onegrade-practice-ai/
+├─ package.json
+├─ server.js
+├─ README.md
+└─ public/
+   └─ index.html
+```
+
+GitHub 저장소에서 기존 파일을 위 파일로 교체하되, `public` 폴더와 그 안의 `index.html`도 반드시 함께 올려야 합니다.
 
 
 ## v2 추가 기능

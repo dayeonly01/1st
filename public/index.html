@@ -154,7 +154,7 @@ canvas{max-width:100%;background:white;border:1px solid var(--line);border-radiu
 <span class="hint">또는 아래의 ‘문제집 사진을 넣어주세요’ 영역에 사진을 바로 드래그하세요.</span>
 </div>
 <div class="row noPrint" style="margin-top:12px">
-<button id="scan" class="primary">🧾 스캔</button><button id="removeWriting">✨ 필기 지우기</button>
+<button id="scan" class="primary">🧾 스캔</button><button id="removeWriting">✨ AI 필기 지우기</button>
 
 
 <button id="keepCrop">✓ 크롭만 남기기</button>
@@ -168,7 +168,7 @@ canvas{max-width:100%;background:white;border:1px solid var(--line);border-radiu
 <div class="row noPrint" style="margin-top:8px"><label>지우개 크기 <input id="brush" type="range" min="10" max="140" value="48"></label></div>
 <div id="cropTray" style="display:none"></div>
 <div id="status" class="status">사진을 드래그하거나 선택해 시작하세요.</div>
-<div class="hint">※ <b>스캔</b>은 종이 배경·명암을 정리합니다. <b>필기 지우기</b>는 색이 있는 채점/필기와 가는 연필 흔적을 보수적으로 제거하는 MVP 기능입니다. 인쇄 숫자·수식과 겹친 필기는 자동으로 억지 복원하지 않고 원본을 보존하는 방향입니다.</div>
+<div class="hint">※ <b>스캔</b>은 종이 배경·명암을 정리합니다. <b>AI 필기 지우기</b>는 연필·펜·채점 흔적만 지우고 인쇄된 문제는 최대한 보존합니다. 처리에는 보통 수십 초가 걸리며, 결과가 마음에 들지 않으면 <b>되돌리기</b>를 누르세요.</div>
 </section>
 <section class="card" id="a4Card">
 <div class="row noPrint" style="justify-content:space-between">
@@ -230,19 +230,40 @@ function getPos(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left
 function baseImage(){return ctx.getImageData(0,0,cv.width,cv.height)}
 $('#scan').onclick=()=>{snap();let d=baseImage(),p=d.data;for(let i=0;i<p.length;i+=4){let g=.299*p[i]+.587*p[i+1]+.114*p[i+2];let v;if(g>178)v=255;else if(g<105)v=Math.max(0,g*.62);else v=Math.min(255,(g-105)*2.65+65);p[i]=p[i+1]=p[i+2]=v}ctx.putImageData(d,0,0);window._baseFrame=ctx.getImageData(0,0,cv.width,cv.height);cropBoxes=[];activeCrop=-1;msg('스캔 보정을 적용했습니다. 종이 배경을 깨끗한 흰색으로 정리했습니다.');detectPageNumber()}
 
-$('#removeWriting').onclick=()=>{
+$('#removeWriting').onclick=async()=>{
   if(!window._baseFrame){msg('먼저 문제집 사진을 넣어주세요.');return}
-  snap();
-  let d=ctx.getImageData(0,0,cv.width,cv.height),p=d.data,removed=0;
-  for(let i=0;i<p.length;i+=4){
-    const r=p[i],g=p[i+1],b=p[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b),sat=mx-mn,lum=(r+g+b)/3;
-    // Colored pen/grading marks are relatively safe to remove. Very light gray pencil is also whitened.
-    if((sat>34 && lum>65) || (sat<18 && lum>155 && lum<225)){
-      p[i]=p[i+1]=p[i+2]=255;removed++;
-    }
+  const button=$('#removeWriting');
+  const clean=document.createElement('canvas');
+  clean.width=cv.width;clean.height=cv.height;
+  clean.getContext('2d').putImageData(window._baseFrame,0,0);
+  button.disabled=true;
+  button.textContent='AI가 지우는 중…';
+  msg('AI가 손글씨와 인쇄 내용을 구분하고 있습니다. 창을 닫지 말고 잠시 기다려주세요.');
+  try{
+    const response=await fetch('/api/remove-handwriting',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({image:clean.toDataURL('image/png')})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||'AI 처리에 실패했습니다.');
+    const edited=new Image();
+    await new Promise((resolve,reject)=>{
+      edited.onload=resolve;edited.onerror=()=>reject(new Error('AI 결과 이미지를 열 수 없습니다.'));
+      edited.src=result.image;
+    });
+    snap();
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.drawImage(edited,0,0,cv.width,cv.height);
+    window._baseFrame=ctx.getImageData(0,0,cv.width,cv.height);
+    cropBoxes=[];activeCrop=-1;cropRect=null;
+    msg('AI 필기 지우기가 끝났습니다. 인쇄 내용이 달라진 곳은 없는지 확인한 뒤 사용해주세요.');
+  }catch(error){
+    msg(error.message+' 원본 이미지는 그대로 유지했습니다.');
+  }finally{
+    button.disabled=false;
+    button.textContent='✨ AI 필기 지우기';
   }
-  ctx.putImageData(d,0,0);window._baseFrame=ctx.getImageData(0,0,cv.width,cv.height);cropBoxes=[];activeCrop=-1;
-  msg('필기 지우기 1차 처리를 적용했습니다. 인쇄물과 겹친 진한 연필은 원문 훼손 방지를 위해 남을 수 있습니다.');
 }
 
 let cropBoxes=[], activeCrop=-1, dragCrop=null; mode='crop';
@@ -258,7 +279,7 @@ function redrawWithBoxes(){
   ctx.restore();
 }
 function commitBase(){window._baseFrame=ctx.getImageData(0,0,cv.width,cv.height);cropBoxes=[];activeCrop=-1}
-$('#erase').onclick=e=>{mode=mode==='erase'?'crop':'erase';e.target.textContent='🧽 지우개 '+(mode==='erase'?'ON':'OFF');e.target.classList.toggle('active',mode==='erase');$('#crop').classList.remove('active')}
+$('#erase').onclick=e=>{mode=mode==='erase'?'crop':'erase';e.target.textContent='🧽 지우개 '+(mode==='erase'?'ON':'OFF');e.target.classList.toggle('active',mode==='erase');$('#crop')?.classList.remove('active')}
 cv.addEventListener('pointerdown',e=>{
   const q=getPos(e);
   if(mode==='crop'){

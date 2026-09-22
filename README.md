@@ -1,6 +1,6 @@
 # 1등급 연습기 웹앱
 
-기존 1등급 연습기에 서버 기반 AI 필기 지우기를 추가한 버전입니다.
+기존 1등급 연습기에 완전 무료 필기 자동 정리 기능을 추가한 버전입니다.
 
 ## 내 컴퓨터에서 실행
 1. Node.js 18 이상 설치
@@ -11,26 +11,22 @@
 이 폴더를 GitHub 저장소에 올린 뒤 Vercel/Render/Railway 같은 Node.js 호스팅에 연결하면 됩니다.
 Start command는 `npm start`입니다.
 
-## AI 필기 지우기 설정
+## 무료 필기 자동 정리
 
-이 버전의 `✨ AI 필기 지우기`는 서버의 `/api/remove-handwriting`을 거쳐 OpenAI 이미지 편집 모델을 사용합니다.
+`✨ 필기 자동 정리`는 사진을 외부 서비스로 보내지 않고 사용자의 브라우저 안에서 처리합니다. API 키, 별도 가입, 사용료가 필요하지 않습니다.
 
-Render 대시보드에서 해당 Web Service를 열고 다음 환경변수를 추가하세요.
+- `약하게`: 색이 있는 필기와 매우 연한 연필 위주로 정리
+- `보통`: 일반적인 채점 흔적과 연필 자국 정리
+- `강하게`: 더 진한 자국까지 정리하지만 회색 인쇄 부분이 함께 지워질 수 있음
 
-- Key: `OPENAI_API_KEY`
-- Value: OpenAI에서 발급한 API 키
+색연필·빨간펜·형광펜·연한 연필에 효과적입니다. 검은 인쇄 글씨와 겹친 진한 연필 필기는 자동으로 완벽하게 구분할 수 없으므로 남은 부분은 지우개를 사용하세요. 잘못 지워졌다면 `되돌리기`로 복원할 수 있습니다.
 
-선택 환경변수:
-
-- Key: `OPENAI_IMAGE_MODEL`
-- Value: 기본값은 `gpt-image-1`
-
-API 키는 절대로 `public/index.html`, GitHub 저장소 또는 화면에 입력하지 마세요. 환경변수를 저장한 뒤 Render에서 다시 배포하면 기능이 활성화됩니다. 이미지 편집 API 사용량에 따라 별도 비용이 발생합니다.
+Render에 `OPENAI_API_KEY`를 등록할 필요가 없습니다. 이미 등록했다면 Render의 Environment에서 삭제해도 됩니다.
 
 ## GitHub에 올릴 파일 구조
 
 ```text
-onegrade-practice-ai/
+onegrade-practice-free/
 ├─ package.json
 ├─ server.js
 ├─ README.md
